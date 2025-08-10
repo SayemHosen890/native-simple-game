@@ -1,11 +1,19 @@
-import { StyleSheet, View, Alert } from "react-native";
+import {
+  StyleSheet,
+  View,
+  Alert,
+  FlatList,
+  useWindowDimensions,
+} from "react-native";
 import Title from "../components/ui/Title";
 import { useEffect, useState } from "react";
 import GameContainer from "../components/game/GameContainer";
 import PrimaryButton from "../components/ui/PrimaryButton";
 import Card from "../components/ui/Card";
 import InstructionText from "../components/ui/InstructionText";
-import Ionicons from '@expo/vector-icons/Ionicons';
+import Ionicons from "@expo/vector-icons/Ionicons";
+import Color from "../constant/Color";
+import GuessLogItem from "../components/game/GuessLogItem";
 
 function generateRandomBetween(min, max, exclude) {
   const rndNum = Math.floor(Math.random() * (max - min)) + min;
@@ -22,13 +30,20 @@ let maxBoundary = 100;
 
 const GameScreen = ({ userNumber, onGameOver }) => {
   const initialGuess = generateRandomBetween(1, 100, userNumber);
-
   const [currentGuess, setCurentGuesss] = useState(initialGuess);
+  const [guessRound, setGuessRound] = useState([initialGuess]);
+  const { height, width } = useWindowDimensions();
+
   useEffect(() => {
     if (currentGuess === userNumber) {
-      onGameOver();
+      onGameOver(guessRound.length);
     }
   }, [currentGuess, userNumber, onGameOver]);
+
+  useEffect(() => {
+    minBoundary = 1;
+    maxBoundary = 100;
+  }, []);
 
   function nextGuessHandler(direction) {
     if (
@@ -54,11 +69,11 @@ const GameScreen = ({ userNumber, onGameOver }) => {
       currentGuess
     );
     setCurentGuesss(newRndNumber);
+    setGuessRound((preGuessRound) => [newRndNumber, ...preGuessRound]);
   }
-
-  return (
-    <View style={styles.screen}>
-      <Title>Opponent's Guess</Title>
+  const guessRoundNumberLength = guessRound.length;
+  let content = (
+    <>
       <GameContainer>{currentGuess}</GameContainer>
       <Card>
         <InstructionText style={styles.introductionText}>
@@ -67,17 +82,57 @@ const GameScreen = ({ userNumber, onGameOver }) => {
         <View style={styles.buttonsContainer}>
           <View style={styles.buttonContainer}>
             <PrimaryButton onPress={nextGuessHandler.bind(this, "lower")}>
-              <Ionicons name="remove" size={23} color="white"/>
+              <Ionicons name="remove" size={23} color="white" />
             </PrimaryButton>
           </View>
           <View style={styles.buttonContainer}>
             <PrimaryButton onPress={nextGuessHandler.bind(this, "greater")}>
-              <Ionicons name="add" size={23} color="white"/>
+              <Ionicons name="add" size={23} color="white" />
             </PrimaryButton>
           </View>
         </View>
       </Card>
-      {/* <View>LOG ROUNDS</View> */}
+    </>
+  );
+
+  if (width > 500) {
+    content = (
+      <>
+        
+        <View style={styles.buttonContainerWide}>
+          <View style={styles.buttonContainer}>
+            <PrimaryButton onPress={nextGuessHandler.bind(this, "lower")}>
+              <Ionicons name="remove" size={23} color="white" />
+            </PrimaryButton>
+          </View>
+          <GameContainer>{currentGuess}</GameContainer>
+          <View style={styles.buttonContainer}>
+            <PrimaryButton onPress={nextGuessHandler.bind(this, "greater")}>
+              <Ionicons name="add" size={23} color="white" />
+            </PrimaryButton>
+          </View>
+        </View>
+      </>
+    );
+  }
+
+  return (
+    <View style={styles.screen}>
+      <Title>Opponent's Guess</Title>
+      {content}
+      <View style={styles.listContainer}>
+        {/* {guessRound.map(guessRound=><Text key={guessRound}>{guessRound}</Text>)} */}
+        <FlatList
+          data={guessRound}
+          renderItem={(itemData) => (
+            <GuessLogItem
+              roundNumber={guessRoundNumberLength - itemData.index}
+              guess={itemData.item}
+            />
+          )}
+          keyExtractor={(item) => item}
+        />
+      </View>
     </View>
   );
 };
@@ -88,14 +143,15 @@ const styles = StyleSheet.create({
   screen: {
     flex: 1,
     padding: 50,
+    alignItems: "center",
   },
   title: {
     fontSize: 24,
     fontWeight: "bold",
-    color: "#ddb52f",
+    color: Color.accent500,
     textAlign: "center",
     borderWidth: 2,
-    borderColor: "#ddb52f",
+    borderColor: Color.accent500,
     padding: 12,
   },
   introductionText: {
@@ -104,7 +160,15 @@ const styles = StyleSheet.create({
   buttonsContainer: {
     flexDirection: "row",
   },
+  buttonContainerWide:{
+    flexDirection:"row",
+    alignItems:'center'
+  },
   buttonContainer: {
     flex: 1,
+  },
+  listContainer: {
+    flex: 1,
+    padding: 12,
   },
 });
